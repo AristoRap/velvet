@@ -1,5 +1,6 @@
 /docs/
 /lib/
-/bin/
+/bin/velvet
+/bin/velvet.dwarf
 /.shards/
 *.dwarf
