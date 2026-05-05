@@ -1,5 +1,8 @@
 # velvet
 
+[![CI](https://github.com/AristoRap/velvet/actions/workflows/ci.yml/badge.svg)](https://github.com/AristoRap/velvet/actions/workflows/ci.yml)
+[![Release](https://github.com/AristoRap/velvet/actions/workflows/release.yml/badge.svg)](https://github.com/AristoRap/velvet/actions/workflows/release.yml)
+
 > The rope between your terminal and your app.
 
 Define prompts in YAML (or use the lib/DSL in Crystal). Collect clean, typed input. Emit JSON. Your app never writes argparse again.
