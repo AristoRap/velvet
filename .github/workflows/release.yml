@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Crystal
+        uses: crystal-lang/install-crystal@v1
+
+      - name: Install dependencies
+        run: shards install
+
+      - name: Build release binary
+        run: shards build --release
+
+      - name: Package artifact
+        run: |
+          mkdir -p dist
+          cp bin/velvet dist/velvet
+          cp LICENSE dist/LICENSE
+          cp README.md dist/README.md
+          tar -czf velvet-linux-amd64.tar.gz -C dist .
+
+      - name: Publish GitHub release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: velvet-linux-amd64.tar.gz
