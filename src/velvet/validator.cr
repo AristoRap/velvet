@@ -51,5 +51,55 @@ module Velvet
         raise ValidationError.new(field_id, "must match #{pat.source}")
       end
     end
+
+    def self.ensure_default_for_cast!(field_id : String, cast : Cast, default_value : String?, validation : Validation?) : Nil
+      return unless default_value
+
+      coerced = coerce_default_for_cast(field_id, cast, default_value)
+      begin
+        validate_value!(field_id, coerced, validation)
+      rescue err : ValidationError
+        raise ConfigError.new("field '#{field_id}': default #{err.message}")
+      end
+    end
+
+    def self.ensure_select_default_in_options!(field_id : String, default_value : String?, options : Array(String)) : Nil
+      return unless default_value
+      return if options.includes?(default_value)
+
+      raise ConfigError.new("field '#{field_id}': default #{default_value.inspect} is not in options")
+    end
+
+    def self.ensure_multiselect_defaults_in_options!(field_id : String, defaults : Array(String), options : Array(String)) : Nil
+      invalid = defaults.reject { |d| options.includes?(d) }
+      return if invalid.empty?
+
+      raise ConfigError.new("field '#{field_id}': defaults not in options: #{invalid}")
+    end
+
+    private def self.coerce_default_for_cast(field_id : String, cast : Cast, default_value : String) : JSON::Any
+      case cast
+      when Cast::String
+        JSON::Any.new(default_value)
+      when Cast::Int
+        JSON::Any.new(default_value.to_i64)
+      when Cast::Float
+        JSON::Any.new(default_value.to_f64)
+      when Cast::Bool
+        token = default_value.downcase
+        case token
+        when "true", "1", "yes"
+          JSON::Any.new(true)
+        when "false", "0", "no"
+          JSON::Any.new(false)
+        else
+          raise ConfigError.new("field '#{field_id}': default expected bool, got #{default_value.inspect}")
+        end
+      else
+        raise ConfigError.new("field '#{field_id}': unsupported cast '#{cast}'")
+      end
+    rescue err : ArgumentError
+      raise ConfigError.new("field '#{field_id}': default expected #{cast}, got #{default_value.inspect}")
+    end
   end
 end

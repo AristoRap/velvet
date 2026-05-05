@@ -196,6 +196,117 @@ describe Velvet::Loader do
     wizard.fields.size.should eq 1
   end
 
+  it "loads typed scalar defaults for casted fields" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: replicas
+        type: input
+        cast: int
+        label: Replicas
+        default: 3
+      - id: cpu_limit
+        type: input
+        cast: float
+        label: CPU limit
+        default: 1.5
+      - id: autoscale
+        type: input
+        cast: bool
+        label: Autoscale
+        default: false
+      - id: priority
+        type: select
+        cast: int
+        label: Priority
+        options: [1, 2, 3]
+        default: 3
+    YAML
+
+    File.write("/tmp/test-typed-defaults.velvet.yml", yaml)
+    wizard = Velvet::Loader.from_yaml("/tmp/test-typed-defaults.velvet.yml")
+
+    replicas = wizard.fields[0].as(Velvet::InputField)
+    cpu_limit = wizard.fields[1].as(Velvet::InputField)
+    autoscale = wizard.fields[2].as(Velvet::InputField)
+    priority = wizard.fields[3].as(Velvet::SelectField)
+
+    replicas.default.should eq "3"
+    cpu_limit.default.should eq "1.5"
+    autoscale.default.should eq "false"
+    priority.default.should eq "3"
+  end
+
+  it "loads typed multiselect defaults for casted fields" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: ports
+        type: multiselect
+        cast: int
+        label: Ports
+        options: [8080, 8081, 9090]
+        defaults: [8080, 9090]
+    YAML
+
+    File.write("/tmp/test-typed-multiselect-defaults.velvet.yml", yaml)
+    wizard = Velvet::Loader.from_yaml("/tmp/test-typed-multiselect-defaults.velvet.yml")
+    ports = wizard.fields[0].as(Velvet::MultiSelectField)
+    ports.defaults.should eq ["8080", "9090"]
+  end
+
+  it "rejects invalid scalar default for cast in yaml" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: priority
+        type: select
+        cast: int
+        label: Priority
+        options: ["1", "2", "3"]
+        default: false
+    YAML
+
+    File.write("/tmp/test-invalid-default-cast.velvet.yml", yaml)
+    expect_raises(Velvet::ConfigError) do
+      Velvet::Loader.from_yaml("/tmp/test-invalid-default-cast.velvet.yml")
+    end
+  end
+
+  it "rejects select default not present in options" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: environment
+        type: select
+        label: Environment
+        options: [dev, prod]
+        default: staging
+    YAML
+
+    File.write("/tmp/test-invalid-select-default-option.velvet.yml", yaml)
+    expect_raises(Velvet::ConfigError) do
+      Velvet::Loader.from_yaml("/tmp/test-invalid-select-default-option.velvet.yml")
+    end
+  end
+
+  it "rejects multiselect defaults not present in options" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: ports
+        type: multiselect
+        label: Ports
+        options: ["8080", "8081"]
+        defaults: ["8080", "9090"]
+    YAML
+
+    File.write("/tmp/test-invalid-multiselect-default-option.velvet.yml", yaml)
+    expect_raises(Velvet::ConfigError) do
+      Velvet::Loader.from_yaml("/tmp/test-invalid-multiselect-default-option.velvet.yml")
+    end
+  end
+
   it "rejects numeric bounds for string casts in yaml" do
     yaml = <<-YAML
     name: test

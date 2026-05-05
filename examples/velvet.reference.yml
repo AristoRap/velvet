@@ -1,0 +1,83 @@
+name: "Velvet Reference"
+
+fields:
+  # string input + regex validation
+  - id: app_name
+    type: input
+    label: "App name"
+    cast: string
+    validate:
+      pattern: "^[a-z0-9-]+$"
+
+  # int input + numeric bounds
+  - id: replicas
+    type: input
+    label: "Replicas"
+    cast: int
+    default: 3
+    validate:
+      min: 1
+      max: 50
+
+  # float input + numeric bounds
+  - id: cpu_limit
+    type: input
+    label: "CPU limit"
+    cast: float
+    default: 1.5
+    validate:
+      min: 0.1
+      max: 8.0
+
+  # bool input (typed) with no validation constraints
+  - id: autoscale
+    type: input
+    label: "Enable autoscaling?"
+    cast: bool
+    default: false
+
+  # select with string cast + pattern validation
+  - id: environment
+    type: select
+    label: "Environment"
+    options: [dev, staging, production]
+    default: dev
+    validate:
+      pattern: "^(dev|staging|production)$"
+
+  # select with int cast + numeric bounds
+  - id: priority
+    type: select
+    label: "Priority"
+    options: [1, 2, 3, 4, 5]
+    cast: int
+    default: 3
+    validate:
+      min: 1
+      max: 5
+
+  # multiselect with string cast + pattern validation
+  - id: regions
+    type: multiselect
+    label: "Regions"
+    options: [us-east-1, eu-west-1, ap-southeast-1]
+    required: false
+    validate:
+      pattern: "^[a-z]{2}-[a-z]+-[0-9]$"
+
+  # multiselect with int cast + numeric bounds
+  - id: port_pool
+    type: multiselect
+    label: "Allowed ports"
+    options: [8080, 8081, 9090]
+    cast: int
+    required: false
+    validate:
+      min: 8000
+      max: 9999
+
+  # confirm field
+  - id: dry_run
+    type: confirm
+    label: "Dry run?"
+    default: false
