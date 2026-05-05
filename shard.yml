@@ -1,0 +1,19 @@
+name: velvet
+version: 0.1.0
+description: The rope between your terminal and your app.
+
+authors:
+  - Aristotelis Rapai <aristotelisrapai@gmail.com>
+
+targets:
+  velvet:
+    main: bin/velvet.cr
+
+crystal: ">= 1.20.0"
+
+dependencies:
+  argy:
+    github: AristoRap/argy
+    branch: main
+
+license: MIT

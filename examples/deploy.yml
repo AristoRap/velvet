@@ -1,0 +1,33 @@
+name: "Deploy config"
+
+fields:
+  - id: id
+    type: input
+    label: "App name"
+    validate:
+      pattern: "^[a-z0-9-]+$"
+
+  - id: environment
+    type: select
+    label: "Target environment"
+    options: [dev, staging, production]
+    default: dev
+
+  - id: replicas
+    type: input
+    label: "Number of replicas"
+    cast: int
+    validate:
+      min: 1
+      max: 20
+
+  - id: dry_run
+    type: confirm
+    label: "Dry run?"
+    default: false
+
+  - id: tags
+    type: multiselect
+    label: "Feature flags"
+    options: [cache, metrics, tracing]
+    required: false
