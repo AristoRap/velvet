@@ -1,23 +1,24 @@
 module Velvet
   module Output
-    # Coerce a raw string value to the correct JSON type based on cast
+    # Coerce a raw string value to the correct JSON type based on cast.
     def self.coerce(field_id : String, value : String, cast : Cast) : JSON::Any
       case cast
-      when Cast::Int
-        JSON::Any.new(value.to_i64)
-      when Cast::Float
-        JSON::Any.new(value.to_f64)
-      when Cast::Bool
-        JSON::Any.new(value == "true" || value == "1" || value == "yes")
-      else
-        JSON::Any.new(value)
+      when Cast::Int   then JSON::Any.new(value.to_i64)
+      when Cast::Float then JSON::Any.new(value.to_f64)
+      when Cast::Bool  then JSON::Any.new(parse_bool_string(value) || false)
+      else                  JSON::Any.new(value)
       end
     rescue ArgumentError
       raise ValidationError.new(field_id, "expected #{cast}, got #{value.inspect}")
     end
 
-    def self.validate!(value : JSON::Any, field : InputField)
-      Validator.validate_value!(field.id.to_s, value, field.validation)
+    # Parses a string to Bool?, returning nil for unrecognised tokens.
+    # Canonical truthy: "true", "1", "yes". Canonical falsy: "false", "0", "no".
+    def self.parse_bool_string(s : String) : Bool?
+      case s.downcase
+      when "true", "1", "yes" then true
+      when "false", "0", "no" then false
+      end
     end
 
     def self.emit(result : Hash(String, JSON::Any))

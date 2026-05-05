@@ -48,8 +48,7 @@ module Velvet
     when Cast::Int    then "int"
     when Cast::Float  then "float"
     when Cast::Bool   then "bool"
-    else
-      raise ConfigError.new("unsupported cast '#{cast}'")
+    else                   raise "BUG: unhandled Cast variant #{cast}"
     end
   end
 
@@ -74,8 +73,7 @@ module Velvet
     when UIKind::Select  then "select"
     when UIKind::Multi   then "multiselect"
     when UIKind::Confirm then "confirm"
-    else
-      raise ConfigError.new("unsupported ui '#{ui}'")
+    else                      raise "BUG: unhandled UIKind variant #{ui}"
     end
   end
 
@@ -105,10 +103,6 @@ module Velvet
     min : Float64? = nil,
     max : Float64? = nil,
     pattern : Regex? = nil
-
-  def self.validate_constraints_for_cast!(field_id : String, cast : Cast, validation : Validation?) : Nil
-    Validator.ensure_constraints!(field_id, cast, validation)
-  end
 
   # A single prompt field — the core unit
   abstract class Field

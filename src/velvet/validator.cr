@@ -86,15 +86,9 @@ module Velvet
       when Cast::Float
         JSON::Any.new(default_value.to_f64)
       when Cast::Bool
-        token = default_value.downcase
-        case token
-        when "true", "1", "yes"
-          JSON::Any.new(true)
-        when "false", "0", "no"
-          JSON::Any.new(false)
-        else
-          raise ConfigError.new("field '#{field_id}': default expected bool, got #{default_value.inspect}")
-        end
+        parsed = Output.parse_bool_string(default_value)
+        raise ConfigError.new("field '#{field_id}': default expected bool, got #{default_value.inspect}") if parsed.nil?
+        JSON::Any.new(parsed)
       else
         raise ConfigError.new("field '#{field_id}': unsupported cast '#{cast}'")
       end

@@ -6,14 +6,9 @@ module Velvet
 
     def self.statusbar_text(step : Int32, total : Int32, field_id : String, value : String | Array(String) | Bool | Nil) : String
       formatted = case value
-                  when Array(String)
-                    value.join(",")
-                  when Bool
-                    value ? "true" : "false"
-                  when Nil
-                    "?"
-                  else
-                    value
+                  when Array(String) then value.join(",")
+                  when Nil           then "?"
+                  else                    value.to_s
                   end
       "[#{step}/#{total}] #{field_id}=#{formatted}"
     end

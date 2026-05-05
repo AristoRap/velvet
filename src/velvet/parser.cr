@@ -90,7 +90,7 @@ module Velvet
         end
         JSON::Any.new(coerced_values)
       when ConfirmField
-        coerced = JSON::Any.new(raw == "true" || raw == "1" || raw == "yes")
+        coerced = JSON::Any.new(Output.parse_bool_string(raw) || false)
         Validator.validate_value!(field.id.to_s, coerced, field.validation)
         coerced
       else

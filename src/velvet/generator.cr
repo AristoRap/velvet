@@ -12,15 +12,12 @@ module Velvet
       file_name = self.file_name(name)
       fields = [] of Field | LetField
 
-      # puts "Creating #{file_name}..."
       args.each do |arg|
-        field = parse_field(arg)
-        fields << field
+        fields << parse_field(arg)
       end
 
       wizard = Wizard.new(name: name, fields: fields)
       write_yaml(file_name, wizard)
-      # puts "Wrote #{file_name}"
       wizard
     end
 
@@ -41,30 +38,20 @@ module Velvet
       ui, options = parse_ui_and_options(ui_token, arg)
 
       label = id
-      field = case ui
-              when Velvet::UIKind::Input
-                if options.any?
-                  raise ConfigError.new("Invalid field declaration '#{arg}': options are only valid for select/multi")
-                end
-                InputField.new(id, label, cast: cast)
-              when Velvet::UIKind::Select
-                SelectField.new(id, label, options: options, cast: cast)
-              when Velvet::UIKind::Multi
-                MultiSelectField.new(id, label, options: options, cast: cast)
-              when Velvet::UIKind::Confirm
-                if options.any?
-                  raise ConfigError.new("Invalid field declaration '#{arg}': options are only valid for select/multi")
-                end
-                if !cast_token.empty? && cast != Cast::Bool
-                  raise ConfigError.new("Invalid field declaration '#{arg}': confirm only supports bool cast")
-                end
-                ConfirmField.new(id, label)
-              else
-                raise ConfigError.new("Unsupported ui kind")
-              end
-
-      # puts "  #{id}:#{cast_name(cast)} -> #{ui_name(ui)}"
-      field
+      case ui
+      when Velvet::UIKind::Input
+        raise ConfigError.new("Invalid field declaration '#{arg}': options are only valid for select/multi") if options.any?
+        InputField.new(id, label, cast: cast)
+      when Velvet::UIKind::Select
+        SelectField.new(id, label, options: options, cast: cast)
+      when Velvet::UIKind::Multi
+        MultiSelectField.new(id, label, options: options, cast: cast)
+      when Velvet::UIKind::Confirm
+        raise ConfigError.new("Invalid field declaration '#{arg}': options are only valid for select/multi") if options.any?
+        raise ConfigError.new("Invalid field declaration '#{arg}': confirm only supports bool cast") if !cast_token.empty? && cast != Cast::Bool
+        ConfirmField.new(id, label)
+      else raise "BUG: unhandled UIKind variant #{ui}"
+      end
     end
 
     private def self.parse_meta_and_ui(arg : String) : Tuple(String, String)
@@ -93,7 +80,6 @@ module Velvet
       options_token = ui_parts[1]?
 
       ui = Velvet.ui_from_token(ui_token, strict: true, context: "Invalid field declaration '#{raw}'")
-
       options = parse_options(options_token, raw)
       {ui.not_nil!, options}
     end
@@ -103,18 +89,8 @@ module Velvet
       return [] of String if token.strip.empty?
 
       vals = token.split(",").map(&.strip)
-      if vals.any?(&.empty?)
-        raise ConfigError.new("Invalid field declaration '#{raw}': options cannot contain empty values")
-      end
+      raise ConfigError.new("Invalid field declaration '#{raw}': options cannot contain empty values") if vals.any?(&.empty?)
       vals
-    end
-
-    private def self.ui_name(ui : Velvet::UIKind) : String
-      Velvet.ui_to_field_type(ui)
-    end
-
-    private def self.cast_name(cast : Cast) : String
-      Velvet.cast_to_token(cast)
     end
 
     private def self.write_yaml(path : String, wizard : Wizard)
@@ -129,17 +105,13 @@ module Velvet
 
         case field
         when InputField
-          row["cast"] = cast_name(field.cast)
+          row["cast"] = Velvet.cast_to_token(field.cast)
         when SelectField
           row["options"] = options_for_yaml(field.options, field.cast)
-          if field.cast != Cast::String
-            row["cast"] = cast_name(field.cast)
-          end
+          row["cast"] = Velvet.cast_to_token(field.cast) if field.cast != Cast::String
         when MultiSelectField
           row["options"] = options_for_yaml(field.options, field.cast)
-          if field.cast != Cast::String
-            row["cast"] = cast_name(field.cast)
-          end
+          row["cast"] = Velvet.cast_to_token(field.cast) if field.cast != Cast::String
         when ConfirmField
           row["default"] = field.default
         end
@@ -147,11 +119,7 @@ module Velvet
         row
       end
 
-      data = {
-        "name"   => wizard.name,
-        "fields" => fields_data,
-      }
-
+      data = {"name" => wizard.name, "fields" => fields_data}
       File.write(path, data.to_yaml)
     end
 
@@ -160,24 +128,20 @@ module Velvet
       when Cast::Int
         options.map do |opt|
           opt.to_i64
-        rescue err : ArgumentError
+        rescue ArgumentError
           raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to int")
         end
       when Cast::Float
         options.map do |opt|
           opt.to_f64
-        rescue err : ArgumentError
+        rescue ArgumentError
           raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to float")
         end
       when Cast::Bool
         options.map do |opt|
-          token = opt.downcase
-          case token
-          when "true", "1", "yes" then true
-          when "false", "0", "no" then false
-          else
-            raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to bool")
-          end
+          parsed = Output.parse_bool_string(opt)
+          raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to bool") if parsed.nil?
+          parsed
         end
       else
         options
@@ -190,10 +154,8 @@ module Velvet
            when SelectField      then Velvet::UIKind::Select
            when MultiSelectField then Velvet::UIKind::Multi
            when ConfirmField     then Velvet::UIKind::Confirm
-           else
-             raise ConfigError.new("Unsupported field type in generator")
+           else                       raise "BUG: unhandled Field subclass #{field.class}"
            end
-
       Velvet.ui_to_field_type(ui)
     end
   end
