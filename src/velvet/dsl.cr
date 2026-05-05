@@ -19,6 +19,7 @@ module Velvet
               min = nil, max = nil, pattern : String? = nil)
       validation = (min || max || pattern) ? Validation.new(min: min.try(&.to_f64), max: max.try(&.to_f64),
         pattern: pattern.try { |p| Regex.new(p) }) : nil
+      Velvet.validate_constraints_for_cast!(id, cast, validation)
       @fields << InputField.new(id, label,
         default: default, cast: cast,
         validation: validation, required: required)

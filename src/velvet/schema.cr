@@ -106,6 +106,19 @@ module Velvet
     max : Float64? = nil,
     pattern : Regex? = nil
 
+  def self.validate_constraints_for_cast!(field_id : String, cast : Cast, validation : Validation?) : Nil
+    return unless validation
+
+    has_numeric_bounds = !validation.min.nil? || !validation.max.nil?
+    if has_numeric_bounds && cast != Cast::Int && cast != Cast::Float
+      raise ConfigError.new("field '#{field_id}': min/max are only valid for int/float casts")
+    end
+
+    if !validation.pattern.nil? && cast != Cast::String
+      raise ConfigError.new("field '#{field_id}': pattern is only valid for string cast")
+    end
+  end
+
   # A single prompt field — the core unit
   abstract class Field
     getter id : String

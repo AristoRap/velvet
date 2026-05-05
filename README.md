@@ -25,13 +25,13 @@ shards build --release
 velvet new "Deploy config" app_name replicas:int frontend@one_of=vanilla,vue dry_run@confirm
 
 # Interactive wizard
-velvet run deploy.yml
+velvet run deploy_config.yml
 
 # Non-interactive — parse flags against schema
-velvet parse deploy.yml -- --environment staging --replicas 3 --dry-run
+velvet parse deploy_config.yml -- --environment staging --replicas 3 --dry-run
 
 # Validate a wizard file
-velvet validate deploy.yml
+velvet validate deploy_config.yml
 
 # Run the DSL deploy example
 crystal run examples/dsl.deploy.cr
@@ -169,6 +169,27 @@ validate:
   min: 1
   max: 100
   pattern: "^[a-z-]+$"
+```
+
+Validation rules are cast-aware and checked when loading YAML or building via DSL:
+
+- `min` / `max` are only valid with `cast: int` or `cast: float`
+- `pattern` is only valid with `cast: string` (or omitted cast, which defaults to string)
+
+Invalid combinations are rejected as schema/config errors (exit code `2`) rather than being ignored.
+
+Examples of invalid combinations:
+
+```yaml
+# invalid: numeric bounds on string
+cast: string
+validate:
+  min: 1
+
+# invalid: pattern on int
+cast: int
+validate:
+  pattern: "^[0-9]+$"
 ```
 
 ---

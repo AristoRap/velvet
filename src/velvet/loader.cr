@@ -14,6 +14,7 @@ module Velvet
                 when "input"
                   cast = Velvet.cast_from_token(s["cast"]?.try(&.as_s))
                   validation = parse_validation(s["validate"]?)
+                  Velvet.validate_constraints_for_cast!(id, cast, validation)
                   InputField.new(id, label,
                     default: s["default"]?.try(&.as_s),
                     cast: cast,

@@ -110,6 +110,22 @@ describe Velvet::DSL do
     wizard.fields[1].as(Velvet::MultiSelectField)
     wizard.fields[2].as(Velvet::MultiSelectField)
   end
+
+  it "rejects numeric bounds for string input fields" do
+    expect_raises(Velvet::ConfigError) do
+      Velvet::DSL.define("Bad validation") do |w|
+        w.input("app_name", "App Name", cast: Velvet::Cast::String, min: 1)
+      end
+    end
+  end
+
+  it "rejects pattern for non-string input fields" do
+    expect_raises(Velvet::ConfigError) do
+      Velvet::DSL.define("Bad validation") do |w|
+        w.input("replicas", "Replicas", cast: Velvet::Cast::Int, pattern: "^\\d+$")
+      end
+    end
+  end
 end
 
 describe Velvet::Runner do
@@ -160,6 +176,42 @@ describe Velvet::Loader do
     wizard = Velvet::Loader.from_yaml("/tmp/test.velvet.yml")
     wizard.name.should eq "test"
     wizard.fields.size.should eq 1
+  end
+
+  it "rejects numeric bounds for string casts in yaml" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: app_name
+        type: input
+        cast: string
+        label: App Name
+        validate:
+          min: 1
+    YAML
+
+    File.write("/tmp/test-invalid-string-validation.velvet.yml", yaml)
+    expect_raises(Velvet::ConfigError) do
+      Velvet::Loader.from_yaml("/tmp/test-invalid-string-validation.velvet.yml")
+    end
+  end
+
+  it "rejects pattern for int casts in yaml" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: replicas
+        type: input
+        cast: int
+        label: Replicas
+        validate:
+          pattern: "^[0-9]+$"
+    YAML
+
+    File.write("/tmp/test-invalid-int-validation.velvet.yml", yaml)
+    expect_raises(Velvet::ConfigError) do
+      Velvet::Loader.from_yaml("/tmp/test-invalid-int-validation.velvet.yml")
+    end
   end
 end
 
