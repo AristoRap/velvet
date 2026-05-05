@@ -1,7 +1,7 @@
 module Velvet
   module Runner
     def self.progress_label(step : Int32, total : Int32, label : String) : String
-      "[#{step}/#{total}] #{label}"
+      "#{label} \e[2m[#{step}/#{total}]\e[0m"
     end
 
     def self.statusbar_text(step : Int32, total : Int32, field_id : String, value : String | Array(String) | Bool | Nil) : String
@@ -47,10 +47,14 @@ module Velvet
     end
 
     private def self.prompt(field : Field, ctx : Hash(String, JSON::Any), step : Int32, total : Int32, display_label : String, footer_text : String) : JSON::Any
+      label_with_progress = progress_label(step, total, display_label)
+
       case field
       when InputField
+        show_summary = true
         loop do
-          raw = prompt_input(field, display_label, footer_text)
+          raw = prompt_input(field, label_with_progress, footer_text, show_summary)
+          show_summary = false
           begin
             coerced = Output.coerce(field.id, raw, field.cast)
             Validator.validate_value!(field.id.to_s, coerced, field.validation)
@@ -64,12 +68,12 @@ module Velvet
           end
         end
       when SelectField
-        raw = prompt_select(field, display_label, footer_text)
+        raw = prompt_select(field, label_with_progress, footer_text)
         coerced = Output.coerce(field.id, raw, field.cast)
         Validator.validate_value!(field.id.to_s, coerced, field.validation)
         coerced
       when MultiSelectField
-        values = prompt_multiselect(field, display_label, footer_text)
+        values = prompt_multiselect(field, label_with_progress, footer_text)
         coerced_values = values.map do |v|
           coerced = Output.coerce(field.id, v, field.cast)
           Validator.validate_value!(field.id.to_s, coerced, field.validation)
@@ -77,7 +81,7 @@ module Velvet
         end
         JSON::Any.new(coerced_values)
       when ConfirmField
-        coerced = JSON::Any.new(prompt_confirm(field, display_label, footer_text))
+        coerced = JSON::Any.new(prompt_confirm(field, label_with_progress, footer_text))
         Validator.validate_value!(field.id.to_s, coerced, field.validation)
         coerced
       else
@@ -85,9 +89,9 @@ module Velvet
       end
     end
 
-    private def self.prompt_input(field : InputField, display_label : String, footer_text : String) : String
+    private def self.prompt_input(field : InputField, display_label : String, footer_text : String, show_summary : Bool) : String
       loop do
-        Prompts::Menu.render_bottom_statusbar(footer_text)
+        print Prompts::Menu.summary_line(footer_text) if show_summary
         print "\e[36m  #{display_label}\e[0m"
         print " \e[2m(#{field.default})\e[0m" if field.default
         print ": "
@@ -99,6 +103,7 @@ module Velvet
           end
           if field.required
             STDERR.puts "  \e[31mrequired\e[0m"
+            show_summary = false
             next
           end
           return ""
@@ -134,7 +139,7 @@ module Velvet
 
     private def self.prompt_confirm(field : ConfirmField, display_label : String, footer_text : String) : Bool
       default_hint = field.default ? "Y/n" : "y/N"
-      Prompts::Menu.render_bottom_statusbar(footer_text)
+      print Prompts::Menu.summary_line(footer_text)
       print "\e[36m  #{display_label}\e[0m [\e[2m#{default_hint}\e[0m]: "
       raw = gets.try(&.chomp.downcase) || ""
       return field.default if raw.empty?

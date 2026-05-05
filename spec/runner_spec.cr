@@ -2,7 +2,7 @@ require "./spec_helper"
 
 describe Velvet::Runner do
   it "formats progress labels" do
-    Velvet::Runner.progress_label(2, 5, "Number of replicas").should eq "[2/5] Number of replicas"
+    Velvet::Runner.progress_label(2, 5, "Number of replicas").should eq "Number of replicas \e[2m[2/5]\e[0m"
   end
 
   it "formats statusbar text with scalar value" do
@@ -15,19 +15,11 @@ describe Velvet::Runner do
 end
 
 describe Velvet::Prompts::Menu do
-  it "formats footer line" do
-    Velvet::Prompts::Menu.footer_line("[2/5] replicas=3").should eq "\e[48;5;238m\e[97m  [2/5] replicas=3\e[0m\r\n"
+  it "formats dim summary line" do
+    Velvet::Prompts::Menu.summary_line("[2/5] replicas=3").should eq "\e[2m  [2/5] replicas=3\e[0m\r\n"
   end
 
-  it "formats bottom footer line anchored to terminal bottom" do
-    Velvet::Prompts::Menu.bottom_footer_line("[2/5] replicas=3", 40).should eq "\e7\e[999;1H\e[2K\e[48;5;238m\e[97m  [2/5] replicas=3\e[0m\e8"
-  end
-
-  it "does not trim footer text when it fits columns" do
-    Velvet::Prompts::Menu.fit_footer_text("[2/5] replicas=3", 40).should eq "[2/5] replicas=3"
-  end
-
-  it "trims footer text with ellipsis when it exceeds columns" do
-    Velvet::Prompts::Menu.fit_footer_text("[2/5] replicas=1234567890", 16).should eq "[2/5] repli..."
+  it "formats dim summary line with empty content" do
+    Velvet::Prompts::Menu.summary_line("").should eq "\e[2m  \e[0m\r\n"
   end
 end

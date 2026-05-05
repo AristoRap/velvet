@@ -51,6 +51,11 @@ velvet run deploy.yml | myapp deploy
 
 Your app just reads JSON from stdin — no argparse, no type coercion, no required-field checks.
 
+Interactive prompt behavior:
+
+- Progress is shown inline in each prompt label as `[step/total]`.
+- Completed values are shown as a dim, scrolling summary line above the current prompt.
+
 ---
 
 ## Generator field shorthand
