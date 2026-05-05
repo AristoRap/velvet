@@ -17,9 +17,8 @@ module Velvet
     def input(id : String, label : String, default : String? = nil,
               cast : Cast = Cast::String, required : Bool = true,
               min = nil, max = nil, pattern : String? = nil)
-      validation = (min || max || pattern) ? Validation.new(min: min.try(&.to_f64), max: max.try(&.to_f64),
-        pattern: pattern.try { |p| Regex.new(p) }) : nil
-      Velvet.validate_constraints_for_cast!(id, cast, validation)
+      validation = Validator.from_args(min, max, pattern)
+      Validator.ensure_constraints!(id, cast, validation)
       @fields << InputField.new(id, label,
         default: default, cast: cast,
         validation: validation, required: required)
@@ -48,46 +47,61 @@ module Velvet
         raise ConfigError.new("DSL field '#{id}': options are only valid for select/multi") if options.any?
         input(id, label, default: default, cast: cast, required: required, min: min, max: max, pattern: pattern)
       when Velvet::UIKind::Select
-        self.select(id, label, options, default: default, cast: cast, required: required)
+        self.select(id, label, options, default: default, cast: cast, required: required, min: min, max: max, pattern: pattern)
       when Velvet::UIKind::Multi
-        self.multiselect(id, label, options, defaults: defaults, cast: cast, required: required)
+        self.multiselect(id, label, options, defaults: defaults, cast: cast, required: required, min: min, max: max, pattern: pattern)
       when Velvet::UIKind::Confirm
         raise ConfigError.new("DSL field '#{id}': options are only valid for select/multi") if options.any?
-        self.confirm(id, label, default: default_confirm)
+        self.confirm(id, label, default: default_confirm, min: min, max: max, pattern: pattern)
       else
         raise ConfigError.new("DSL field '#{id}': unsupported ui '#{ui}'")
       end
     end
 
     def select(id : String, label : String, options : Array(String),
-               default : String? = nil, cast : Cast = Cast::String, required : Bool = true)
+               default : String? = nil, cast : Cast = Cast::String, required : Bool = true,
+               min = nil, max = nil, pattern : String? = nil)
+      validation = Validator.from_args(min, max, pattern)
+      Validator.ensure_constraints!(id, cast, validation)
       @fields << SelectField.new(id, label,
-        options: options, default: default, cast: cast, required: required)
+        options: options, default: default, cast: cast, validation: validation, required: required)
     end
 
     def one_of(id : String, label : String, options : Array(String),
-               default : String? = nil, cast : Cast = Cast::String, required : Bool = true)
-      self.select(id, label, options, default: default, cast: cast, required: required)
+               default : String? = nil, cast : Cast = Cast::String, required : Bool = true,
+               min = nil, max = nil, pattern : String? = nil)
+      self.select(id, label, options, default: default, cast: cast, required: required,
+        min: min, max: max, pattern: pattern)
     end
 
     def multiselect(id : String, label : String, options : Array(String),
-                    defaults : Array(String) = [] of String, cast : Cast = Cast::String, required : Bool = false)
+                    defaults : Array(String) = [] of String, cast : Cast = Cast::String, required : Bool = false,
+                    min = nil, max = nil, pattern : String? = nil)
+      validation = Validator.from_args(min, max, pattern)
+      Validator.ensure_constraints!(id, cast, validation)
       @fields << MultiSelectField.new(id, label,
-        options: options, defaults: defaults, cast: cast, required: required)
+        options: options, defaults: defaults, cast: cast, validation: validation, required: required)
     end
 
     def multi(id : String, label : String, options : Array(String),
-              defaults : Array(String) = [] of String, cast : Cast = Cast::String, required : Bool = false)
-      self.multiselect(id, label, options, defaults: defaults, cast: cast, required: required)
+              defaults : Array(String) = [] of String, cast : Cast = Cast::String, required : Bool = false,
+              min = nil, max = nil, pattern : String? = nil)
+      self.multiselect(id, label, options, defaults: defaults, cast: cast, required: required,
+        min: min, max: max, pattern: pattern)
     end
 
     def any_of(id : String, label : String, options : Array(String),
-               defaults : Array(String) = [] of String, cast : Cast = Cast::String, required : Bool = false)
-      self.multiselect(id, label, options, defaults: defaults, cast: cast, required: required)
+               defaults : Array(String) = [] of String, cast : Cast = Cast::String, required : Bool = false,
+               min = nil, max = nil, pattern : String? = nil)
+      self.multiselect(id, label, options, defaults: defaults, cast: cast, required: required,
+        min: min, max: max, pattern: pattern)
     end
 
-    def confirm(id : String, label : String, default : Bool = false)
-      @fields << ConfirmField.new(id, label, default: default)
+    def confirm(id : String, label : String, default : Bool = false,
+                min = nil, max = nil, pattern : String? = nil)
+      validation = Validator.from_args(min, max, pattern)
+      Validator.ensure_constraints!(id, Velvet::Cast::Bool, validation)
+      @fields << ConfirmField.new(id, label, default: default, validation: validation)
     end
 
     def let(id : String, &block : Hash(String, JSON::Any) -> String)

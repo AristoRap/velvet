@@ -126,6 +126,24 @@ describe Velvet::DSL do
       end
     end
   end
+
+  it "rejects bool-incompatible validation on confirm fields" do
+    expect_raises(Velvet::ConfigError) do
+      Velvet::DSL.define("Bad validation") do |w|
+        w.field("dry_run", "Dry run", ui: "confirm", min: 1)
+      end
+    end
+  end
+
+  it "supports pattern validation on select fields" do
+    wizard = Velvet::DSL.define("Select validation") do |w|
+      w.field("environment", "Environment", ui: "select", options: ["dev", "prod"], pattern: "^(dev|prod)$")
+    end
+
+    expect_raises(Velvet::ValidationError) do
+      Velvet::Parser.parse(wizard, ["--environment", "staging"])
+    end
+  end
 end
 
 describe Velvet::Runner do
@@ -211,6 +229,43 @@ describe Velvet::Loader do
     File.write("/tmp/test-invalid-int-validation.velvet.yml", yaml)
     expect_raises(Velvet::ConfigError) do
       Velvet::Loader.from_yaml("/tmp/test-invalid-int-validation.velvet.yml")
+    end
+  end
+
+  it "rejects validate block for confirm fields in yaml" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: dry_run
+        type: confirm
+        label: Dry run
+        validate:
+          min: 1
+    YAML
+
+    File.write("/tmp/test-invalid-confirm-validation.velvet.yml", yaml)
+    expect_raises(Velvet::ConfigError) do
+      Velvet::Loader.from_yaml("/tmp/test-invalid-confirm-validation.velvet.yml")
+    end
+  end
+
+  it "loads and applies validate block for select fields in yaml" do
+    yaml = <<-YAML
+    name: test
+    fields:
+      - id: environment
+        type: select
+        label: Environment
+        options: [dev, prod]
+        validate:
+          pattern: "^(dev|prod)$"
+    YAML
+
+    File.write("/tmp/test-select-validation.velvet.yml", yaml)
+    wizard = Velvet::Loader.from_yaml("/tmp/test-select-validation.velvet.yml")
+
+    expect_raises(Velvet::ValidationError) do
+      Velvet::Parser.parse(wizard, ["--environment", "staging"])
     end
   end
 end

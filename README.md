@@ -28,7 +28,7 @@ velvet new "Deploy config" app_name replicas:int frontend@one_of=vanilla,vue dry
 velvet run deploy_config.yml
 
 # Non-interactive — parse flags against schema
-velvet parse deploy_config.yml -- --environment staging --replicas 3 --dry-run
+velvet parse deploy_config.yml -- --app-name myapp --replicas 3 --frontend vue --dry-run
 
 # Validate a wizard file
 velvet validate deploy_config.yml

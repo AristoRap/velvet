@@ -1,0 +1,6 @@
+version: 2.0
+shards:
+  argy:
+    git: https://github.com/aristorap/argy.git
+    version: 0.2.0+git.commit.b39088c6849fee43243e3b3b2cc7966b02aa2944
+

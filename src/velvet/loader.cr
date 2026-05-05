@@ -13,8 +13,8 @@ module Velvet
         field = case s["type"].as_s
                 when "input"
                   cast = Velvet.cast_from_token(s["cast"]?.try(&.as_s))
-                  validation = parse_validation(s["validate"]?)
-                  Velvet.validate_constraints_for_cast!(id, cast, validation)
+                  validation = Validator.from_yaml(s["validate"]?)
+                  Validator.ensure_constraints!(id, cast, validation)
                   InputField.new(id, label,
                     default: s["default"]?.try(&.as_s),
                     cast: cast,
@@ -23,19 +23,26 @@ module Velvet
                 when "select"
                   options = s["options"].as_a.map(&.as_s)
                   cast = Velvet.cast_from_token(s["cast"]?.try(&.as_s))
+                  validation = Validator.from_yaml(s["validate"]?)
+                  Validator.ensure_constraints!(id, cast, validation)
                   SelectField.new(id, label,
                     options: options,
                     default: s["default"]?.try(&.as_s),
                     cast: cast,
+                    validation: validation,
                     required: req)
                 when "multiselect"
                   options = s["options"].as_a.map(&.as_s)
                   defaults = s["defaults"]?.try(&.as_a.map(&.as_s)) || [] of String
                   cast = Velvet.cast_from_token(s["cast"]?.try(&.as_s))
-                  MultiSelectField.new(id, label, options: options, defaults: defaults, cast: cast, required: req)
+                  validation = Validator.from_yaml(s["validate"]?)
+                  Validator.ensure_constraints!(id, cast, validation)
+                  MultiSelectField.new(id, label, options: options, defaults: defaults, cast: cast, validation: validation, required: req)
                 when "confirm"
                   default = s["default"]?.try(&.as_bool) || false
-                  ConfirmField.new(id, label, default: default, required: req)
+                  validation = Validator.from_yaml(s["validate"]?)
+                  Validator.ensure_constraints!(id, Velvet::Cast::Bool, validation)
+                  ConfirmField.new(id, label, default: default, validation: validation, required: req)
                 else
                   raise ConfigError.new("Unknown field type: #{s["type"]}")
                 end
@@ -44,15 +51,6 @@ module Velvet
       end
 
       Wizard.new(name: name, fields: fields)
-    end
-
-    private def self.parse_validation(node : YAML::Any?) : Validation?
-      return nil unless node
-      Validation.new(
-        min: node["min"]?.try(&.as_f?),
-        max: node["max"]?.try(&.as_f?),
-        pattern: node["pattern"]?.try { |p| Regex.new(p.as_s) }
-      )
     end
   end
 end

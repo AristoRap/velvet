@@ -72,18 +72,27 @@ module Velvet
       case field
       when InputField
         coerced = Output.coerce(field.id, raw, field.cast)
-        Output.validate!(coerced, field)
+        Validator.validate_value!(field.id.to_s, coerced, field.validation)
         coerced
       when SelectField
         raise ValidationError.new(key, "#{raw.inspect} not in #{field.options}") unless field.options.includes?(raw)
-        Output.coerce(field.id, raw, field.cast)
+        coerced = Output.coerce(field.id, raw, field.cast)
+        Validator.validate_value!(field.id.to_s, coerced, field.validation)
+        coerced
       when MultiSelectField
         vals = raw.split(",").map(&.strip)
         invalid = vals.reject { |v| field.options.includes?(v) }
         raise ValidationError.new(key, "invalid options: #{invalid}") unless invalid.empty?
-        JSON::Any.new(vals.map { |v| Output.coerce(field.id, v, field.cast) })
+        coerced_values = vals.map do |v|
+          coerced = Output.coerce(field.id, v, field.cast)
+          Validator.validate_value!(field.id.to_s, coerced, field.validation)
+          coerced
+        end
+        JSON::Any.new(coerced_values)
       when ConfirmField
-        JSON::Any.new(raw == "true" || raw == "1" || raw == "yes")
+        coerced = JSON::Any.new(raw == "true" || raw == "1" || raw == "yes")
+        Validator.validate_value!(field.id.to_s, coerced, field.validation)
+        coerced
       else
         JSON::Any.new(raw)
       end

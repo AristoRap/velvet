@@ -107,16 +107,7 @@ module Velvet
     pattern : Regex? = nil
 
   def self.validate_constraints_for_cast!(field_id : String, cast : Cast, validation : Validation?) : Nil
-    return unless validation
-
-    has_numeric_bounds = !validation.min.nil? || !validation.max.nil?
-    if has_numeric_bounds && cast != Cast::Int && cast != Cast::Float
-      raise ConfigError.new("field '#{field_id}': min/max are only valid for int/float casts")
-    end
-
-    if !validation.pattern.nil? && cast != Cast::String
-      raise ConfigError.new("field '#{field_id}': pattern is only valid for string cast")
-    end
+    Validator.ensure_constraints!(field_id, cast, validation)
   end
 
   # A single prompt field — the core unit
@@ -150,8 +141,9 @@ module Velvet
     getter options : Array(String)
     getter default : String?
     getter cast : Cast
+    getter validation : Validation?
 
-    def initialize(id, label, @options, @default = nil, @cast = Cast::String, required = true, condition = nil)
+    def initialize(id, label, @options, @default = nil, @cast = Cast::String, @validation = nil, required = true, condition = nil)
       super(id, label, required, condition)
     end
   end
@@ -160,16 +152,18 @@ module Velvet
     getter options : Array(String)
     getter defaults : Array(String)
     getter cast : Cast
+    getter validation : Validation?
 
-    def initialize(id, label, @options, @defaults = [] of String, @cast = Cast::String, required = false, condition = nil)
+    def initialize(id, label, @options, @defaults = [] of String, @cast = Cast::String, @validation = nil, required = false, condition = nil)
       super(id, label, required, condition)
     end
   end
 
   class ConfirmField < Field
     getter default : Bool
+    getter validation : Validation?
 
-    def initialize(id, label, @default = false, required = true, condition = nil)
+    def initialize(id, label, @default = false, @validation = nil, required = true, condition = nil)
       super(id, label, required, condition)
     end
   end

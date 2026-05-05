@@ -17,20 +17,7 @@ module Velvet
     end
 
     def self.validate!(value : JSON::Any, field : InputField)
-      v = field.validation
-      return unless v
-
-      if (min = v.min) && value.as_f? && value.as_f < min
-        raise ValidationError.new(field.id.to_s, "must be >= #{min}")
-      end
-
-      if (max = v.max) && value.as_f? && value.as_f > max
-        raise ValidationError.new(field.id.to_s, "must be <= #{max}")
-      end
-
-      if (pat = v.pattern) && value.as_s? && !value.as_s.matches?(pat)
-        raise ValidationError.new(field.id.to_s, "must match #{pat.source}")
-      end
+      Validator.validate_value!(field.id.to_s, value, field.validation)
     end
 
     def self.emit(result : Hash(String, JSON::Any))

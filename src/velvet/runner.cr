@@ -58,7 +58,7 @@ module Velvet
           raw = prompt_input(field, display_label, footer_text)
           begin
             coerced = Output.coerce(field.id, raw, field.cast)
-            Output.validate!(coerced, field)
+            Validator.validate_value!(field.id.to_s, coerced, field.validation)
             return coerced
           rescue err : Velvet::ValidationError
             if field.required
@@ -70,12 +70,21 @@ module Velvet
         end
       when SelectField
         raw = prompt_select(field, display_label, footer_text)
-        Output.coerce(field.id, raw, field.cast)
+        coerced = Output.coerce(field.id, raw, field.cast)
+        Validator.validate_value!(field.id.to_s, coerced, field.validation)
+        coerced
       when MultiSelectField
         values = prompt_multiselect(field, display_label, footer_text)
-        JSON::Any.new(values.map { |v| Output.coerce(field.id, v, field.cast) })
+        coerced_values = values.map do |v|
+          coerced = Output.coerce(field.id, v, field.cast)
+          Validator.validate_value!(field.id.to_s, coerced, field.validation)
+          coerced
+        end
+        JSON::Any.new(coerced_values)
       when ConfirmField
-        JSON::Any.new(prompt_confirm(field, display_label, footer_text))
+        coerced = JSON::Any.new(prompt_confirm(field, display_label, footer_text))
+        Validator.validate_value!(field.id.to_s, coerced, field.validation)
+        coerced
       else
         raise Error.new("Unknown field type: #{field.class}")
       end
