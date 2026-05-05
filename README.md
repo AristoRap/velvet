@@ -9,7 +9,7 @@ Define prompts in YAML (or use the lib/DSL in Crystal). Collect clean, typed inp
 ## Install
 
 ```bash
-git clone https://github.com/you/velvet
+git clone https://github.com/aristorap/velvet
 cd velvet
 shards install
 shards build --release
