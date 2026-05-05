@@ -12,6 +12,29 @@ describe Velvet::Runner do
   it "formats statusbar text with multiple selected values" do
     Velvet::Runner.statusbar_text(4, 5, "tags", ["cache", "metrics"]).should eq "[4/5] tags=cache,metrics"
   end
+
+  it "formats statusbar text with nil as unknown" do
+    Velvet::Runner.statusbar_text(2, 5, "replicas", nil).should eq "[2/5] replicas=?"
+  end
+
+  it "formats completed statusbar text for empty context" do
+    Velvet::Runner.completed_statusbar_text(1, 5, {} of String => JSON::Any).should eq "[1/5] done: none"
+  end
+
+  it "formats completed statusbar text with mixed typed values" do
+    ctx = {
+      "app_name"  => JSON::Any.new("myapp"),
+      "replicas"  => JSON::Any.new(3_i64),
+      "autoscale" => JSON::Any.new(false),
+      "tags"      => JSON::Any.new([
+        JSON::Any.new("cache"),
+        JSON::Any.new("metrics"),
+      ]),
+    }
+
+    Velvet::Runner.completed_statusbar_text(4, 5, ctx)
+      .should eq "[4/5] done: app_name=myapp | replicas=3 | autoscale=false | tags=cache,metrics"
+  end
 end
 
 describe Velvet::Prompts::Menu do
