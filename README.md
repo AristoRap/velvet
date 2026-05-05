@@ -37,6 +37,42 @@ velvet validate deploy_config.yml
 crystal run examples/dsl.deploy.cr
 ```
 
+## Commands
+
+| command                     | aliases      | short description                          |
+| --------------------------- | ------------ | ------------------------------------------ |
+| `new [name] <shorthand>...` | `n`, `init`  | Scaffold a new velvet config               |
+| `run [file]`                | `r`          | Run an interactive wizard and emit JSON    |
+| `parse [file] -- [flags]`   | `p`          | Parse flags against a schema and emit JSON |
+| `validate [file]`           | `v`, `check` | Validate a wizard file                     |
+
+Long descriptions are available in command help:
+
+```bash
+velvet --help
+velvet new --help
+velvet run --help
+velvet parse --help
+velvet validate --help
+```
+
+Missing required positional arguments print a command-specific usage hint (including aliases):
+
+```text
+Error: run requires a file argument
+Usage: velvet run [file]
+Alias: r
+```
+
+Alias examples:
+
+```bash
+velvet n "Deploy config" app_name replicas:int
+velvet r deploy_config.yml
+velvet p deploy_config.yml -- --app-name myapp --replicas 3
+velvet v deploy_config.yml
+```
+
 The new command writes a normalized <name>.yml file in the current directory.
 
 Pipe into your app:
@@ -63,10 +99,16 @@ Interactive prompt behavior:
 Supported shorthand format:
 
 ```text
-field   := id | id:cast | id@ui | id:cast@ui | id:cast@ui=val,val
-cast    := str | string | int | float | bool
-ui      := input | select | multi | confirm
-values  := csv, valid only with select and multi
+field       := id
+            | id:cast
+            | id@ui
+            | id:cast@ui
+            | id:cast@ui=val,val,...
+
+cast        := str | string | int | float | bool
+ui          := input | select | multi(select) | confirm
+ui_alias    := one_of -> select | any_of -> multi
+values      := csv list, valid only with select-family or multi-family ui
 ```
 
 Examples:

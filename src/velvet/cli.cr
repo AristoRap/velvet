@@ -33,13 +33,33 @@ module Velvet
     # velvet new <name> ...
     private def self.setup_new(root : Argy::Command)
       cmd = Argy::Command.new(
-        use: "new [name]",
+        use: "new [name] <shorthand>...",
         short: "Scaffold a new velvet config",
+        long: <<-TEXT,
+        Create a wizard YAML file from shorthand field definitions.
+        Writes a normalized <name>.yml in the current directory.
+
+        Example:
+          velvet new "Deploy config" app_name replicas:int dry_run@confirm
+
+        Shorthand:
+          field       := id
+                      | id:cast
+                      | id@ui
+                      | id:cast@ui
+                      | id:cast@ui=val,val,...
+
+          cast        := str | string | int | float | bool
+          ui          := input | select | multi(select) | confirm
+          ui_alias    := one_of -> select | any_of -> multi
+          values      := csv list, valid only with select-family or multi-family ui
+        TEXT
+        aliases: ["n", "init"]
       )
 
       cmd.on_run do |_cmd, args|
         name = args.shift? || abort_with("new requires a name argument")
-        abort_with("new requires at least one argument") if args.empty?
+        abort_with("new requires at least one field argument") if args.empty?
 
         wizard = Generator.run(name, args)
         file = Generator.file_name(name)
@@ -53,7 +73,11 @@ module Velvet
     private def self.setup_run(root : Argy::Command)
       cmd = Argy::Command.new(
         use: "run [file]",
-        short: "Run an interactive wizard and emit JSON"
+        short: "Run an interactive wizard and emit JSON",
+        long: "Interactive mode. Prompts for each field in [file], validates input,\n" \
+              "applies casting, and emits JSON to stdout.\n\n" \
+              "Example:\n  velvet run deploy.yml",
+        aliases: ["r"]
       )
 
       cmd.on_run do |_cmd, args|
@@ -73,7 +97,8 @@ module Velvet
         short: "Parse flags against a schema and emit JSON",
         long: "Non-interactive mode. Validates and coerces flags defined in [file].\n" \
               "Emits clean JSON. Useful for CI or wrapping existing CLIs.\n\n" \
-              "Example:\n  velvet parse deploy.yml -- --environment staging --replicas 3 --dry-run"
+              "Example:\n  velvet parse deploy.yml -- --environment staging --replicas 3 --dry-run",
+        aliases: ["p"]
       )
 
       cmd.on_run do |_cmd, args|
@@ -95,7 +120,11 @@ module Velvet
     private def self.setup_validate(root : Argy::Command)
       cmd = Argy::Command.new(
         use: "validate [file]",
-        short: "Validate a wizard file"
+        short: "Validate a wizard file",
+        long: "Load and schema-validate [file] without running prompts.\n" \
+              "Useful for CI checks and editor hooks.\n\n" \
+              "Example:\n  velvet validate deploy.yml",
+        aliases: ["v", "check"]
       )
 
       cmd.on_run do |_cmd, args|
