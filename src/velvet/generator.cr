@@ -125,18 +125,18 @@ module Velvet
           "id"    => field.id,
           "type"  => type_for(field),
           "label" => field.label,
-        } of String => String | Bool | Array(String)
+        } of String => String | Bool | Array(String) | Array(Int64) | Array(Float64) | Array(Bool)
 
         case field
         when InputField
           row["cast"] = cast_name(field.cast)
         when SelectField
-          row["options"] = field.options
+          row["options"] = options_for_yaml(field.options, field.cast)
           if field.cast != Cast::String
             row["cast"] = cast_name(field.cast)
           end
         when MultiSelectField
-          row["options"] = field.options
+          row["options"] = options_for_yaml(field.options, field.cast)
           if field.cast != Cast::String
             row["cast"] = cast_name(field.cast)
           end
@@ -153,6 +153,35 @@ module Velvet
       }
 
       File.write(path, data.to_yaml)
+    end
+
+    private def self.options_for_yaml(options : Array(String), cast : Cast) : Array(String) | Array(Int64) | Array(Float64) | Array(Bool)
+      case cast
+      when Cast::Int
+        options.map do |opt|
+          opt.to_i64
+        rescue err : ArgumentError
+          raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to int")
+        end
+      when Cast::Float
+        options.map do |opt|
+          opt.to_f64
+        rescue err : ArgumentError
+          raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to float")
+        end
+      when Cast::Bool
+        options.map do |opt|
+          token = opt.downcase
+          case token
+          when "true", "1", "yes" then true
+          when "false", "0", "no" then false
+          else
+            raise ConfigError.new("Generator option #{opt.inspect} cannot be cast to bool")
+          end
+        end
+      else
+        options
+      end
     end
 
     private def self.type_for(field : Field) : String
