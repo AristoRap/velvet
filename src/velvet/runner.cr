@@ -23,6 +23,12 @@ module Velvet
       "[#{step}/#{total}] done: #{summary}"
     end
 
+    def self.parse_confirm_answer(raw : String, default : Bool) : Bool
+      normalized = raw.strip.downcase
+      return default if normalized.empty?
+      normalized == "y" || normalized == "yes"
+    end
+
     def self.run(wizard : Wizard) : Hash(String, JSON::Any)
       result = {} of String => JSON::Any
       total_steps = wizard.fields.select(Field).size
@@ -141,9 +147,8 @@ module Velvet
       default_hint = field.default ? "Y/n" : "y/N"
       print Prompts::Menu.summary_line(footer_text)
       print "\e[36m  #{display_label}\e[0m [\e[2m#{default_hint}\e[0m]: "
-      raw = gets.try(&.chomp.downcase) || ""
-      return field.default if raw.empty?
-      raw == "y" || raw == "yes"
+      raw = gets.try(&.chomp) || ""
+      parse_confirm_answer(raw, field.default)
     end
   end
 end
