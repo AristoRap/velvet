@@ -21,6 +21,16 @@ module Velvet
             next
           end
 
+          # A default satisfies required — coerce and store it
+          default = case field
+                    when InputField  then field.default
+                    when SelectField then field.default
+                    end
+          if default
+            result[key] = compute_coerced(key, field, default)
+            next
+          end
+
           if field.required
             raise ValidationError.new(key, "missing required flag --#{flag_key}")
           end

@@ -94,9 +94,14 @@ module Velvet
         raw = gets.try(&.chomp) || ""
 
         if raw.empty?
-          return field.default || "" unless field.required
-          STDERR.puts "  \e[31mrequired\e[0m"
-          next
+          if (default = field.default)
+            return default
+          end
+          if field.required
+            STDERR.puts "  \e[31mrequired\e[0m"
+            next
+          end
+          return ""
         end
 
         return raw

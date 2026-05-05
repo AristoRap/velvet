@@ -15,5 +15,5 @@ require "./velvet/dsl"
 require "./velvet/cli"
 
 module Velvet
-  VERSION = "0.2.2"
+  VERSION = "0.2.3"
 end
